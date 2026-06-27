@@ -77,6 +77,8 @@ Most of the parameter count is the ImageNet-pretrained ResNet50 convolutional tr
 ResNet50/
 ├── README.md                ← this file
 ├──  ResNet50-ViT.py         ← model definition + summary print
+├── test_inference.py        ← run untrained model on real images
+├── evaluate.py              ← top-k accuracy + confusion on a labelled test dir
 └── img/
     ├── ResNet50-ViT.png     ← hybrid architecture diagram
     └── vit.png              ← reference Vision Transformer diagram
@@ -151,6 +153,59 @@ model = mod.ResNet50ViT(config)
 
 x = np.zeros((1, 512, 512, 3), dtype="float32")
 probs = model(x, training=False)               # (1, 10), sums to 1
+```
+
+### Running on real images (no training needed)
+
+`test_inference.py` loads any folder of images, runs them through the model, and prints top-k predictions plus a "how uniform is the output" diagnostic. The diagnostic is useful because an **untrained** head produces near-uniform probabilities — if your predictions look uniform, the model is healthy but untrained; if they look confident and wrong, something else is wrong (preprocessing, label mapping, etc.).
+
+```bash
+# Single image
+python test_inference.py --image path/to/cat.jpg
+
+# Whole directory (recursive)
+python test_inference.py --image-dir path/to/images/
+
+# If you have a labelled test directory, use evaluate.py instead (next section)
+```
+
+Sample output (untrained model on four images):
+
+```
+── img_0.png
+   max_p=0.575  normalized_entropy=0.634  (1.0=uniform/random)
+   #1  class  6  p=0.5748  ███████████████████████
+   #2  class  8  p=0.1228  █████
+   #3  class  0  p=0.1028  ████
+```
+
+### Evaluating on a labelled test set
+
+Once you've trained and saved weights, `evaluate.py` computes top-k accuracy, per-class accuracy, and a confusion summary. The dataset directory must follow the standard `image_dataset_from_directory` layout (one subdirectory per class):
+
+```bash
+python evaluate.py --test-dir data/test --weights resnet50_vit_best.keras
+python evaluate.py --test-dir data/test --weights resnet50_vit_best.keras --batch-size 4 --top-k 1 5
+```
+
+Run it **without** `--weights` to sanity-check the evaluation pipeline — accuracy will be ≈ `1/num_classes`:
+
+```bash
+python evaluate.py --test-dir data/test
+```
+
+Expected output on a small synthetic 3-class set with no weights:
+
+```
+Detected 3 classes: ['bird', 'cat', 'dog']
+Evaluated 12 images.
+  top-1 accuracy: 0.3333  (4/12)
+  top-3 accuracy: 1.0000  (12/12)
+
+Per-class top-1 accuracy:
+                  bird: 0.000  (0/4)
+                   cat: 0.000  (0/4)
+                   dog: 1.000  (4/4)
 ```
 
 ---
