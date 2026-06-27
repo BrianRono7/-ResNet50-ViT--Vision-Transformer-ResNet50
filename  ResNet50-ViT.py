@@ -1,10 +1,14 @@
 import os 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow logging (1)
 
-import tensorflow as tf 
-from tensorflow.keras import layers, models # keras layers and models
+import tensorflow as tf
+from tensorflow.keras import layers, models  # keras layers and models
 from tensorflow.keras.models import Model
-from tensorflow.keras.applications import ResNet50 # import ResNet50 model from keras applications
+from tensorflow.keras.layers import (
+    Layer, Dense, Dropout, LayerNormalization, MultiHeadAttention,
+    Add, Conv2D, Embedding, Concatenate, Input, Reshape,
+)
+from tensorflow.keras.applications import ResNet50  # import ResNet50 model from keras applications
 
 
 
