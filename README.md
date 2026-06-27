@@ -77,6 +77,7 @@ Most of the parameter count is the ImageNet-pretrained ResNet50 convolutional tr
 ResNet50/
 ├── README.md                ← this file
 ├──  ResNet50-ViT.py         ← model definition + summary print
+├── app.py                   ← Streamlit web UI (optional)
 ├── test_inference.py        ← run untrained model on real images
 ├── evaluate.py              ← top-k accuracy + confusion on a labelled test dir
 └── img/
@@ -93,6 +94,8 @@ ResNet50/
 * Python 3.9+
 * TensorFlow 2.12+ (tested with the Keras 3 backend path)
 * NumPy
+* Streamlit 1.28+ (only needed if you want to run `app.py`)
+* (Optional) Pillow — `app.py` works without it by falling back to `tf.io.decode_image`.
 
 A minimal setup:
 
@@ -100,7 +103,12 @@ A minimal setup:
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install --upgrade pip
+
+# Core (model + CLI tools)
 pip install tensorflow numpy
+
+# Optional UI
+pip install streamlit
 ```
 
 On first run, Keras will download `resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5` (~95 MB) into `~/.keras/models/`.
@@ -207,6 +215,27 @@ Per-class top-1 accuracy:
                    cat: 0.000  (0/4)
                    dog: 1.000  (4/4)
 ```
+
+### Streamlit web UI
+
+For a friendlier interactive test, `app.py` runs a small web app: upload an image, see predictions, optionally upload trained weights.
+
+```bash
+pip install streamlit
+streamlit run app.py
+```
+
+That opens `http://localhost:8501` in your browser. The UI:
+
+- **Left pane** — uploaded image (resized to the chosen size).
+- **Right pane** — top-K bar chart, top-1 class + confidence, **output entropy** as a uniformity diagnostic.
+- **Sidebar** — image size, number of classes, top-K, and a `.keras` / `.h5` weights uploader.
+
+**Important UX notes baked into the app:**
+
+- If no weights are uploaded, the model uses a randomly-initialized ViT head. The app explicitly warns about this and the entropy readout will hover near 0.7–1.0 (random). That's expected.
+- If you *do* upload weights and the output still looks uniform (entropy > 0.85), the app warns you — usually that means the preprocessing (e.g. you trained with `tf.keras.applications.resnet50.preprocess_input` but this demo uses `/255.0`) or class count doesn't match.
+- Model construction is wrapped in `@st.cache_resource`, so the graph is only built once per session — reloading the page doesn't pay the ~30 s construction cost again.
 
 ---
 
